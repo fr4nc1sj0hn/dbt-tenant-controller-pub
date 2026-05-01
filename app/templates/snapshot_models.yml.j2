@@ -1,0 +1,10 @@
+snapshots:
+  - name: snapshot_{{ model_name }}
+    relation: ref('{{ staging_model }}')
+    config:
+      schema: snapshots_{{ tenant_name }}
+      unique_key: code
+      strategy: check
+      check_cols:
+        - label
+        - is_active

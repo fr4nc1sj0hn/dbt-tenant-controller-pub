@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+python-dotenv
+pandas
+jinja2
+PyYAML
+dbt-postgres
+apache-airflow-providers-http

@@ -1,0 +1,12 @@
+{{ tenant_name }}:
+    target: dev
+    outputs:
+        dev:
+            type: "{{ adapter_type }}"
+            host: "{{ host }}"
+            port: {{ port }}
+            user: "{{ user }}"
+            password: "{{ password }}"
+            dbname: "{{ dbname }}"
+            schema: "{{ tenant_name }}"
+            threads: {{ threads }}

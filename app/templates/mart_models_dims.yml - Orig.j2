@@ -1,0 +1,9 @@
+-- Mart Model: {{ model_name }}
+
+select
+    {{ '{{' }} dbt_utils.generate_surrogate_key(['code']) {{ '}}' }} as {{ model_name }}_sk,
+    code,
+    label,
+    is_active,
+    ingestion_timestamp
+from {{ '{{' }} ref('{{ staging_model }}') {{ '}}' }}

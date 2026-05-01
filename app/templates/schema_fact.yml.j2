@@ -1,0 +1,12 @@
+version: 2
+models:
+  - name: {{ model }}
+    columns:
+    {% for dim_model in dim_models %}
+      - name: {{ dim_model }}_sk
+        tests:
+          - not_null
+          - relationships:
+              to: ref('{{ dim_model }}')
+              field: {{ dim_model }}_sk
+    {% endfor %}

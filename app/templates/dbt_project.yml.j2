@@ -1,0 +1,39 @@
+name: {{ tenant_name }}
+version: '1.0'
+profile: {{ tenant_name }}
+
+model-paths:
+  - models
+
+snapshot-paths:
+  - snapshots
+
+analysis-paths:
+  - analysis
+
+test-paths:
+  - tests
+
+seed-paths:
+  - seeds
+
+macro-paths:
+  - macros
+
+clean-targets:
+  - target
+  - dbt_packages
+
+models:
+    {{ tenant_name }}:
+        staging:
+            +schema: staging_{{ tenant_name }}
+            +materialized: view
+
+        marts:
+            +schema: marts_{{ tenant_name }}
+            +materialized: table
+
+snapshots:
+    {{ tenant_name }}:
+        +schema: snapshots_{{ tenant_name }}

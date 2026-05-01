@@ -1,0 +1,34 @@
+version: 2
+
+models:
+
+{% for model in models %}
+  - name: {{ model.name }}
+    {% if model.description %}
+    description: "{{ model.description }}"
+    {% endif %}
+
+    columns:
+    {% for col in model.columns %}
+      - name: {{ col.name }}
+        {% if col.description %}
+        description: "{{ col.description }}"
+        {% endif %}
+
+        {% if col.tests %}
+        tests:
+        {% for test in col.tests %}
+          {% if test is string %}
+            - {{ test }}
+
+          {% elif test.relationships is defined %}
+            - relationships:
+                to: {{ test.relationships.to }}
+                field: {{ test.relationships.field }}
+
+          {% endif %}
+        {% endfor %}
+        {% endif %}
+    {% endfor %}
+
+{% endfor %}

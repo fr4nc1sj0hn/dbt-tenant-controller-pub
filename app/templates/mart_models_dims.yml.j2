@@ -1,0 +1,13 @@
+-- Mart Model: {{ model_name }}
+
+select
+    {{ '{{' }} dbt_utils.generate_surrogate_key(['code','dbt_valid_from']) {{ '}}' }} as {{ model_name }}_sk,
+    code,
+    label,
+    is_active,
+
+    ingestion_timestamp as effective_from,
+    dbt_valid_to as effective_to,
+
+    ingestion_timestamp
+from {{ '{{' }} ref('snapshot_{{ model_name }}') {{ '}}' }}

@@ -1,0 +1,14 @@
+version: 2
+sources:
+  - name: raw
+    schema: raw_{{ tenant_name }}
+    freshness:
+      warn_after: {count: 1, period: day}
+      error_after: {count: 2, period: day}
+      
+    loaded_at_field: ingestion_timestamp
+
+    tables:
+{% for table in tables %}
+      - name: {{ table }}
+{% endfor %}

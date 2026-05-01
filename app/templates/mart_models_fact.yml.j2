@@ -1,0 +1,61 @@
+-- Mart Model: {{ model_name }}
+{{ '{{' }} config(
+    materialized='incremental',
+    unique_key='{{ model_name }}_sk'
+) {{ '}}' }}
+
+with source_data as (
+    select *
+    from {{ '{{' }} ref('{{ staging_model }}') {{ '}}' }}
+    {{ '{% if is_incremental() %}' }}
+    where ingestion_timestamp >= (
+        select coalesce(max(ingestion_timestamp), '1900-01-01') 
+        from {{ '{{' }} this {{ '}}' }}
+    ) - interval '1 day'
+    {{ '{% endif %}' }}
+),
+
+joined_dims as (
+    select
+        sd.*,
+
+        {% for dim in dimension_tables %}
+        {{ dim }}.{{ dim }}_sk as {{ dim }}_sk{% if not loop.last %},{% endif %}
+        {% endfor %}
+
+    from source_data sd
+
+    {% for dim in dimension_tables %}
+    left join {{ '{{' }} ref('{{ dim }}') {{ '}}' }} {{ dim }} 
+      on sd.{{ dim }}_code = {{ dim }}.code
+      and sd.ingestion_timestamp >= {{ dim }}.effective_from
+        and (
+            sd.ingestion_timestamp < {{ dim }}.effective_to
+            or {{ dim }}.effective_to is null
+        )
+    {% endfor %}
+)
+select
+    -- optional fact surrogate key (hash of grain)
+    {{ '{{' }} dbt_utils.generate_surrogate_key([
+        {% for dim in dimension_tables %}
+            '{{ dim }}_sk'{% if not loop.last %},{% endif %}
+        {% endfor %}
+        {% if dimension_tables|length > 0 %},{% endif %}
+        'ingestion_timestamp'
+    ]) {{ '}}' }} as {{ model_name }}_sk,
+
+    {% for dim in dimension_tables %}
+    {{ dim }}_sk,
+    {% endfor %}
+
+    -- measures go here
+    measure1,
+    measure2,
+    measure3,
+    measure4,
+    measure5,
+    source_system,
+    ingestion_timestamp
+
+from joined_dims

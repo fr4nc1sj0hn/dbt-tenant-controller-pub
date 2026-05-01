@@ -1,0 +1,10 @@
+-- Staging Model: {{ model_name }}
+
+with source_data as (
+    select *
+    from {{ '{{' }} source('raw', '{{ source_table }}') {{ '}}' }}
+)
+
+select
+    *
+from source_data

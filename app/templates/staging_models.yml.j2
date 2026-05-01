@@ -1,0 +1,15 @@
+-- Staging Model: {{ model_name }}
+
+with source_data as (
+    select *
+    from {{ '{{' }} source('raw', '{{ source_table }}') {{ '}}' }}
+)
+
+select
+    {{ source_table.replace('raw_', '') }}_code as code,
+    {{ source_table.replace('raw_', '') }}_label as label,
+    sort_order,
+    is_active,
+    source_system,
+    ingestion_timestamp
+from source_data

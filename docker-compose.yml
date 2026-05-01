@@ -1,0 +1,161 @@
+version: "3.8"
+
+# =========================
+# AIRFLOW COMMON CONFIG
+# =========================
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.9.1
+  environment:
+    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@airflow-db/airflow
+    AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_CORE_FERNET_KEY} #"PA9jY8zB5kIoTOrjapeeTCjE-7GJx4KP0kLBHzKzXMI="
+    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_WEBSERVER_SECRET_KEY} #"cf39032bc5a73caf7be28861f19785c36af8216ec6324895e5c5ff590e805a0f"
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    HOST_BASE_PATH: "C:\\projects\\tenant-controller\\tenants"
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./tenants:/opt/shared/tenants
+    - ./logs:/opt/airflow/logs
+    - /var/run/docker.sock:/var/run/docker.sock
+  depends_on:
+    - airflow-db
+    - redis
+  networks:
+    - backend
+
+# =========================
+# YOUR EXISTING SERVICES
+# =========================
+
+services:
+
+  # -------------------------
+  # FASTAPI CONTROL PLANE
+  # -------------------------
+  fastapi:
+    build: .
+    container_name: tenant-controller
+    ports:
+      - "8000:8000"
+    environment:
+      DBT_USER: ${DBT_USER}
+      DBT_USER_PASSWORD: ${DBT_USER_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      ADMIN_USER: ${ADMIN_USER}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    volumes:
+      - ./tenants:/app/tenants
+    networks:
+      - backend
+    restart: unless-stopped
+
+  # -------------------------
+  # DBT RUNNER (TEMPORARY - WILL BE REPLACED LATER)
+  # -------------------------
+  dbt-runner:
+    image: ghcr.io/dbt-labs/dbt-postgres:latest
+    container_name: dbt-runner
+    ports:
+      - "8090:8080"
+    depends_on:
+      - fastapi
+    environment:
+      DBT_USER: ${DBT_USER}
+      DBT_USER_PASSWORD: ${DBT_USER_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      DBT_ADAPTER: "postgres"
+      ADMIN_USER: ${ADMIN_USER}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    volumes:
+      - ./tenants:/dbt/tenants
+    working_dir: /dbt/tenants
+    entrypoint: ["tail", "-f", "/dev/null"]
+    networks:
+      - backend
+    restart: unless-stopped
+
+  # =========================
+  # AIRFLOW CORE SERVICES
+  # =========================
+
+  airflow-db:
+    image: postgres:15
+    container_name: airflow-db
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow_db_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  redis:
+    image: redis:7
+    container_name: airflow-redis
+    networks:
+      - backend
+
+  # -------------------------
+  # AIRFLOW INIT (RUN ONCE)
+  # -------------------------
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command: >
+      -c "
+      airflow db migrate &&
+      airflow users create --username airflow --password airflow --firstname admin --lastname user --role Admin --email admin@example.com
+      "
+    restart: "no"
+
+  # -------------------------
+  # AIRFLOW WEB UI
+  # -------------------------
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow-webserver
+    command: webserver
+    ports:
+      - "8081:8080"
+    restart: unless-stopped
+
+  # -------------------------
+  # AIRFLOW SCHEDULER
+  # -------------------------
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow-scheduler
+    command: scheduler
+    restart: unless-stopped
+
+  # -------------------------
+  # AIRFLOW WORKER
+  # -------------------------
+  airflow-worker:
+    <<: *airflow-common
+    container_name: airflow-worker
+    command: celery worker
+    restart: unless-stopped
+
+# =========================
+# VOLUMES
+# =========================
+volumes:
+  #tenant_projects:
+  airflow_db_data:
+
+# =========================
+# NETWORK
+# =========================
+networks:
+  backend:
+    external: true
