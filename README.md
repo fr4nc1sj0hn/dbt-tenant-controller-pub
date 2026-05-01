@@ -1,24 +1,20 @@
-# dbt-tenant-controller: A PoC Tenant Controller for Postgres + dbt (Schema Provisioning + Metadata-Driven Project Generation)
-
-If you’ve ever built a multi-tenant analytics platform, you’ve probably felt the pain:
+A multi-tenant data/analytics platform has the following challenges:
 
 - every new tenant needs schemas (`raw_*`, `staging_*`, `marts_*`)
-- permissions must be dbt-friendly (or dbt will fail in confusing ways)
-- dbt projects often start as copy/paste forks… and slowly diverge
+- correct permissions 
+- dbt projects often start as copy/paste folders which can slowly differs over time
 
-This repository, **dbt-tenant-controller**, is a small FastAPI service that turns that onboarding workflow into a simple API call:
+This repository is a small FastAPI service that turns onboarding workflow into a simple API call:
 
 1. Provision per-tenant schemas inside Postgres.
 2. Generate a per-tenant dbt project based on metadata stored in Postgres.
 3. (Optionally) run dbt commands in a companion container.
 
-> This project came out of repeatedly building “dbt platforms” where tenant onboarding was treated as a manual process rather than a first-class system concern.
-
 ---
 
 ## Important note: this is a PoC / reference implementation
 
-This project **works** and demonstrates a useful pattern, but it is intentionally a **Proof of Concept (PoC)**.
+This project demonstrates a useful pattern, but still far from a Prod implementation.
 
 Treat it as a **reference guide** for the architecture and code organization rather than a production-ready service. The section **“Considerations for Production”** below outlines what you’d need to add or change to run this safely and reliably in a real environment.
 
