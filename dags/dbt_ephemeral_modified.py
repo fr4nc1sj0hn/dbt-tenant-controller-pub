@@ -35,7 +35,7 @@ with DAG(
             task_id=task_id,
             image=DBT_IMAGE,
 
-            # ✅ Put tenant inside command (templated)
+
             command=f"{dbt_cmd} --project-dir {CONTAINER_BASE_PATH}/{TENANT_EXPR} --profiles-dir {CONTAINER_BASE_PATH}/{TENANT_EXPR}",
 
             docker_url="unix://var/run/docker.sock",
